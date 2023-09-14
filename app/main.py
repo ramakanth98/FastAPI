@@ -1,11 +1,17 @@
 from argparse import OPTIONAL
 from fastapi import FastAPI, Response, status, HTTPException
-from fastapi.params import Body
+from fastapi.params import Body, Depends
 from pydantic import BaseModel
 from random import randrange
 import psycopg2
 from psycopg2.extras import RealDictCursor
 import time
+from . import models
+from .database import engine, get_db
+from sqlalchemy.orm import Session
+
+
+models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
@@ -39,7 +45,7 @@ def find_index_post(id):
             return i
 
 
-
+##ALL API's
 @app.get("/")
 def root():
     return {"message": "Reload check 222"}
@@ -83,3 +89,8 @@ def update_post(id: int, post: Post):
     if updated_post==None:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=f"post with id {id} does not exist")
     return {'data': updated_post}
+
+@app.get("/sqlalchemy")
+def test_posts(db: Session = Depends(get_db)):
+    posts = db.query(models.Post).all()
+    return {"data": posts}
